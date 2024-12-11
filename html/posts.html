@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Lab 9</title>
+</head>
+<body>
+    <h2>Список пользователей</h2>
+    <div>
+        <input type="hidden" id="postId" />
+        <p>
+            Название:<br/>
+            <input id="title" />
+        </p>
+        <p>
+            Содержимое:<br />
+            <input id="content" type="text" />
+        </p>
+        <p>
+            ID автора:<br />
+            <input id="userId" type="text" />
+        </p>
+         <p>
+            <button id="saveBtn">Сохранить</button>
+        </p>
+    </div>
+    <table>
+        <thead><tr><th>Название</th><th>Содержимое</th><th>user_id</th><th></th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        // Получение всех постов
+        async function getPosts() {
+            const response = await fetch("/api/posts", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+
+            if (response.ok === true) {
+                const posts = await response.json();
+                const rows = document.querySelector("tbody");
+                posts.forEach(post => rows.append(row(post)));
+            }
+        }
+
+        // Получение одного поста
+        async function getPost(id) {
+            const response = await fetch(`/api/posts/${id}`, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const post = await response.json();
+                document.getElementById("postId").value = post.id;
+                document.getElementById("title").value = post.title;
+                document.getElementById("content").value = post.content;
+                document.getElementById("userId").value = post.user_id;
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        // Добавление поста
+        async function createPost(title, content, user_id) {
+  
+            const response = await fetch("api/posts", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: title,
+                    content: content,
+                    user_id: user_id
+                })
+            });
+            if (response.ok === true) {
+                const post = await response.json();
+                document.querySelector("tbody").append(row(post));
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        // Изменение поста
+        async function editPost(postId, title, content, user_id) {
+            const response = await fetch("api/posts", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: postId,
+                    title: title,
+                    content: content,
+                    user_id: user_id
+                })
+            });
+            if (response.ok === true) {
+                const post = await response.json();
+                document.querySelector(`tr[data-rowid='${post.id}']`).replaceWith(row(post));
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        // Удаление поста
+        async function deletePost(id) {
+            const response = await fetch(`/api/posts/${id}`, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const post = await response.json();
+                document.querySelector(`tr[data-rowid='${post.id}']`).remove();
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        // Создание строки для таблицы
+        function row(post) {
+  
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", post.id);
+  
+            const titleTd = document.createElement("td");
+            titleTd.append(post.title);
+            tr.append(titleTd);
+  
+            const contentTd = document.createElement("td");
+            contentTd.append(post.content);
+            tr.append(contentTd);
+
+            const user_idTd = document.createElement("td");
+            user_idTd.append(post.user_id);
+            tr.append(user_idTd);
+  
+            const linksTd = document.createElement("td");
+  
+            const editLink = document.createElement("button"); 
+            editLink.append("Изменить");
+            editLink.addEventListener("click", async() => await getPost(post.id));
+            linksTd.append(editLink);
+  
+            const removeLink = document.createElement("button"); 
+            removeLink.append("Удалить");
+            removeLink.addEventListener("click", async () => await deletePost(post.id));
+  
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+  
+            return tr;
+        }
+
+        // отправка формы
+        document.getElementById("saveBtn").addEventListener("click", async () => {
+             
+             const id = document.getElementById("postId").value;
+             const title = document.getElementById("title").value;
+             const content = document.getElementById("content").value;
+             const user_id = document.getElementById("userId").value;
+             if (id === "")
+                 await createPost(title, content, user_id);
+             else
+                 await editPost(id, title, content, user_id);
+         });
+
+        getPosts()
+    </script>
+</body>
+</html>
