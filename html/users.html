@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Lab 9</title>
+</head>
+<body>
+    <h2>Список пользователей</h2>
+    <div>
+        <input type="hidden" id="userId" />
+        <p>
+            Имя:<br/>
+            <input id="userName" />
+        </p>
+        <p>
+            Почта:<br />
+            <input id="email" type="text" />
+        </p>
+        <p>
+            Пароль:<br />
+            <input id="password" type="text" />
+        </p>
+         <p>
+            <button id="saveBtn">Сохранить</button>
+        </p>
+    </div>
+    <table>
+        <thead><tr><th>Имя</th><th>Почта</th><th>Пароль</th><th></th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        // Получение всех пользователей
+        async function getUsers() {
+            const response = await fetch("/api/users", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+
+            if (response.ok === true) {
+                const users = await response.json();
+                const rows = document.querySelector("tbody");
+                users.forEach(user => rows.append(row(user)));
+            }
+        }
+
+        // Получение одного пользователя
+        async function getUser(id) {
+            const response = await fetch(`/api/users/${id}`, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const user = await response.json();
+                document.getElementById("userId").value = user.id;
+                document.getElementById("userName").value = user.username;
+                document.getElementById("email").value = user.email;
+                document.getElementById("password").value = user.password;
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        // Добавление пользователя
+        async function createUser(userName, email, password) {
+  
+            const response = await fetch("api/users", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: userName,
+                    email: email,
+                    password: password
+                })
+            });
+            if (response.ok === true) {
+                const user = await response.json();
+                document.querySelector("tbody").append(row(user));
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        // Изменение пользователя
+        async function editUser(userId, userName, email, password) {
+            const response = await fetch("api/users", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: userId,
+                    username: userName,
+                    email: email,
+                    password: password
+                })
+            });
+            if (response.ok === true) {
+                const user = await response.json();
+                document.querySelector(`tr[data-rowid='${user.id}']`).replaceWith(row(user));
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        // Удаление пользователя
+        async function deleteUser(id) {
+            const response = await fetch(`/api/users/${id}`, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const user = await response.json();
+                document.querySelector(`tr[data-rowid='${user.id}']`).remove();
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        // Создание строки для таблицы
+        function row(user) {
+  
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", user.id);
+  
+            const usernameTd = document.createElement("td");
+            usernameTd.append(user.username);
+            tr.append(usernameTd);
+  
+            const emailTd = document.createElement("td");
+            emailTd.append(user.email);
+            tr.append(emailTd);
+
+            const passwordTd = document.createElement("td");
+            passwordTd.append(user.password);
+            tr.append(passwordTd);
+  
+            const linksTd = document.createElement("td");
+  
+            const editLink = document.createElement("button"); 
+            editLink.append("Изменить");
+            editLink.addEventListener("click", async() => await getUser(user.id));
+            linksTd.append(editLink);
+  
+            const removeLink = document.createElement("button"); 
+            removeLink.append("Удалить");
+            removeLink.addEventListener("click", async () => await deleteUser(user.id));
+  
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+  
+            return tr;
+        }
+
+        // отправка формы
+        document.getElementById("saveBtn").addEventListener("click", async () => {
+             
+             const id = document.getElementById("userId").value;
+             const name = document.getElementById("userName").value;
+             const email = document.getElementById("email").value;
+             const password = document.getElementById("password").value;
+             if (id === "")
+                 await createUser(name, email, password);
+             else
+                 await editUser(id, name, email, password);
+         });
+
+        getUsers()
+    </script>
+</body>
+</html>
